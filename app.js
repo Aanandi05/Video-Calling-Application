@@ -1,131 +1,139 @@
-const express = require('express')
-const http = require('http')
-var cors = require('cors')
-const app = express()
-const bodyParser = require('body-parser')
-const path = require("path")
-var xss = require("xss")
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require("path");
+const xss = require("xss");
 
-var server = http.createServer(app)
-var io = require('socket.io')(server)
+const app = express();
+const server = http.createServer(app);
+const io = require('socket.io')(server);
 
-app.use(cors())
-app.use(bodyParser.json())
+app.use(cors());
+app.use(bodyParser.json());
 
-if(process.env.NODE_ENV==='production'){
-	app.use(express.static(__dirname+"/build"))
-	app.get("*", (req, res) => {
-		res.sendFile(path.join(__dirname+"/build/index.html"))
-	})
-}
-app.set('port', (process.env.PORT || 4001))
-
-sanitizeString = (str) => {
-	return xss(str)
+// Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(__dirname + "/build"));
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(__dirname + "/build/index.html"));
+    });
 }
 
-connections = {}
-messages = {}
-timeOnline = {}
+app.set('port', (process.env.PORT || 4001));
 
+// XSS sanitizer
+const sanitizeString = (str) => xss(str);
+
+// Data stores
+let connections = {};
+let messages = {};
+let timeOnline = {};
+let roomPasswords = {}; // Store meeting passwords
+
+// ------------------ Password-protected endpoints ------------------ //
+
+// Create a room with server-generated password
+app.post('/create-room', (req, res) => {
+    // Generate random 6-character password
+    let password;
+    do {
+        password = Math.random().toString(36).substring(2, 8).toUpperCase();
+    } while (roomPasswords[password]); // ensure uniqueness
+
+    roomPasswords[password] = password; // password is now the room ID
+    return res.json({ success: true, password });
+});
+
+// Join room by password
+app.post('/join-room', (req, res) => {
+    const { password } = req.body;
+    if (!password || !roomPasswords[password]) {
+        return res.status(404).json({ success: false, message: "Room does not exist" });
+    }
+    return res.json({ success: true });
+});
+
+// ------------------ Socket.io handlers ------------------ //
 io.on('connection', (socket) => {
 
-	socket.on('join-call', (path) => {
-		// If this is the first user in the call, create the connections array
-		if (connections[path] === undefined) {
-			connections[path] = [];
-			// Make the first user the admin
-			io.to(socket.id).emit('set-admin', true);
-		} else {
-			// All other users are not admin
-			io.to(socket.id).emit('set-admin', false);
-		}
+    socket.on('join-call', (path) => {
+        if (!connections[path]) {
+            connections[path] = [];
+            io.to(socket.id).emit('set-admin', true); // first user is admin
+        } else {
+            io.to(socket.id).emit('set-admin', false);
+        }
 
-		// Add the user to the connections list
-		connections[path].push(socket.id);
+        connections[path].push(socket.id);
+        timeOnline[socket.id] = new Date();
 
-		// Track user's join time
-		timeOnline[socket.id] = new Date();
+        connections[path].forEach(id => {
+            io.to(id).emit("user-joined", socket.id, connections[path]);
+        });
 
-		// Notify all users in the room about the new user
-		for (let a = 0; a < connections[path].length; ++a) {
-			io.to(connections[path][a]).emit("user-joined", socket.id, connections[path]);
-		}
+        if (messages[path]) {
+            messages[path].forEach(msg => {
+                io.to(socket.id).emit("chat-message", msg.data, msg.sender, msg["socket-id-sender"]);
+            });
+        }
 
-		// Send existing chat messages to the newly joined user
-		if (messages[path] !== undefined) {
-			for (let a = 0; a < messages[path].length; ++a) {
-				io.to(socket.id).emit(
-					"chat-message",
-					messages[path][a]['data'],
-					messages[path][a]['sender'],
-					messages[path][a]['socket-id-sender']
-				);
-			}
-		}
+        console.log(path, connections[path]);
+    });
 
-		console.log(path, connections[path]);
-	});
+    socket.on('signal', (toId, message) => {
+        io.to(toId).emit('signal', socket.id, message);
+    });
 
+    socket.on('chat-message', (data, sender) => {
+        data = sanitizeString(data);
+        sender = sanitizeString(sender);
 
-	socket.on('signal', (toId, message) => {
-		io.to(toId).emit('signal', socket.id, message)
-	})
+        let key;
+        let ok = false;
+        for (const [k, v] of Object.entries(connections)) {
+            if (v.includes(socket.id)) {
+                key = k;
+                ok = true;
+                break;
+            }
+        }
 
-	socket.on('chat-message', (data, sender) => {
-		data = sanitizeString(data)
-		sender = sanitizeString(sender)
+        if (ok) {
+            if (!messages[key]) messages[key] = [];
+            messages[key].push({ sender, data, "socket-id-sender": socket.id });
 
-		var key
-		var ok = false
-		for (const [k, v] of Object.entries(connections)) {
-			for(let a = 0; a < v.length; ++a){
-				if(v[a] === socket.id){
-					key = k
-					ok = true
-				}
-			}
-		}
+            connections[key].forEach(id => {
+                io.to(id).emit("chat-message", data, sender, socket.id);
+            });
+        }
+    });
 
-		if(ok === true){
-			if(messages[key] === undefined){
-				messages[key] = []
-			}
-			messages[key].push({"sender": sender, "data": data, "socket-id-sender": socket.id})
-			console.log("message", key, ":", sender, data)
+    socket.on('disconnect', () => {
+        let key;
+        let diffTime = Math.abs(new Date() - timeOnline[socket.id]);
 
-			for(let a = 0; a < connections[key].length; ++a){
-				io.to(connections[key][a]).emit("chat-message", data, sender, socket.id)
-			}
-		}
-	})
+        for (const [k, v] of Object.entries(connections)) {
+            if (v.includes(socket.id)) {
+                key = k;
 
-	socket.on('disconnect', () => {
-		var diffTime = Math.abs(timeOnline[socket.id] - new Date())
-		var key
-		for (const [k, v] of JSON.parse(JSON.stringify(Object.entries(connections)))) {
-			for(let a = 0; a < v.length; ++a){
-				if(v[a] === socket.id){
-					key = k
+                connections[key].forEach(id => {
+                    io.to(id).emit("user-left", socket.id);
+                });
 
-					for(let a = 0; a < connections[key].length; ++a){
-						io.to(connections[key][a]).emit("user-left", socket.id)
-					}
-			
-					var index = connections[key].indexOf(socket.id)
-					connections[key].splice(index, 1)
+                connections[key] = connections[key].filter(id => id !== socket.id);
+                console.log(key, socket.id, Math.ceil(diffTime / 1000));
 
-					console.log(key, socket.id, Math.ceil(diffTime / 1000))
+                if (connections[key].length === 0) {
+                    delete connections[key];
+                    delete roomPasswords[key]; // remove password when room is empty
+                    delete messages[key];
+                }
+                break;
+            }
+        }
+    });
+});
 
-					if(connections[key].length === 0){
-						delete connections[key]
-					}
-				}
-			}
-		}
-	})
-})
-
-server.listen(app.get('port'), () => {
-	console.log("listening on", app.get('port'))
-})
+const PORT = process.env.PORT || 4001;
+server.listen(PORT, () => console.log("listening on", PORT));
