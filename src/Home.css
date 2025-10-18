@@ -1,16 +1,109 @@
-html, body {
-  	height: 100%;
-}
-body {
-	margin: 0;
-	text-align: center;
-	background-color: whitesmoke;
+
+/* Full page body and html */
+body, html {
+  margin: 0;
+  height: 100%;
+  font-family: 'Arial', sans-serif;
+  background: #fff0f5; /* pastel pink background */
+  /* remove display:flex from body */
 }
 
-.container2 {
-	padding-top: 30px;
-	margin: auto;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
+/* Wrapper that centers everything */
+.home-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+/* Top decorative panel */
+.top-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  padding: 15px 20px;
+  background: #ffe6f0;
+  border-radius: 15px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.top-title {
+  color: #ff69b4;
+  margin: 0;
+}
+
+.github-btn {
+  color: #ff69b4;
+}
+
+/* Hero card in center */
+.hero-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.hero-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 2rem;
+  color: #ff69b4;
+}
+
+.hero-subtitle {
+  font-weight: 300;
+  margin: 10px 0 30px;
+  color: #ff85c1;
+}
+
+/* Meeting input panel */
+.meeting-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.panel-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #ff69b4;
+}
+
+.meeting-input {
+  width: 80%;
+  background: #ffe6f0;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+.meeting-btn {
+  background: #ffb6c1;
+  color: white;
+  font-weight: bold;
+  width: 60%;
+  padding: 10px;
+  border-radius: 10px;
+  transition: 0.3s;
+}
+
+.meeting-btn:hover {
+  background: #ff85c1;
 }
