@@ -144,8 +144,50 @@ button {
   font-weight: bold;
   transition: transform 0.2s, opacity 0.2s;
 }
+body.dark {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+body.dark video {
+    border-color: #ffffff;
+}
+
 
 button:hover {
   transform: scale(1.05);
   opacity: 0.9;
+}
+.video-wrapper.dark {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+/* Hero / main container with videos */
+.video-wrapper.dark .container,
+.video-wrapper.dark .btn-down,
+.video-wrapper.dark #main,
+.video-wrapper.dark .modal-content {
+    background-color: #1e1e1e; /* dark background for boxes */
+    color: #ffffff;
+    border-color: #333; /* if there are borders */
+}
+
+/* Inputs & buttons */
+.video-wrapper.dark input {
+    background-color: #2c2c2c;
+    color: #ffffff;
+}
+
+.video-wrapper.dark button {
+    background-color: #3f51b5;
+    color: #ffffff;
+}
+
+.dark-main {
+  background-color: #121212; /* or any dark shade */
+}
+
+.dark .flex-container video {
+    border-color: #333; /* optional: video border in dark mode */
 }
