@@ -24,12 +24,6 @@ This app allows users to create and join video calls, chat, toggle audio/video, 
 
 ---
 
-## 🖥️ Demo
-
-Check out the live demo: **[Insert Deployed Link Here]**
-
----
-
 ## 💻 Tech Stack
 
 | Layer          | Technology                       |
@@ -39,6 +33,7 @@ Check out the live demo: **[Insert Deployed Link Here]**
 | Database       | MongoDB (optional for scheduling) |
 | Real-Time Comm | WebRTC                           |
 | Styling        | CSS3, Bootstrap, Reactstrap      |
+| Deploying        | Render                         |
 
 ---
 
