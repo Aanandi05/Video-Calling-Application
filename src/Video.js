@@ -46,6 +46,7 @@ class Video extends Component {
 			video: false,
 			audio: false,
 			screen: false,
+			darkMode: false,
 			showModal: false,
 			screenAvailable: false,
 			messages: [],
@@ -57,6 +58,12 @@ class Video extends Component {
 		connections = {}
 
 		this.getPermissions()
+	}
+	toggleDarkMode = () => {
+		this.setState(prevState => {
+			document.body.classList.toggle("dark", !prevState.darkMode)
+			return { darkMode: !prevState.darkMode }
+		})
 	}
 
 	getPermissions = async () => {
@@ -482,7 +489,7 @@ class Video extends Component {
 			)
 		}
 		return (
-			<div>
+			<div className={`video-wrapper ${this.state.darkMode ? "dark" : ""}`}>
 				{this.state.askForUsername === true ?
 					<div>
 						<div style={{background: "white", width: "30%", height: "auto", padding: "20px", minWidth: "400px",
@@ -507,6 +514,10 @@ class Video extends Component {
 							<IconButton style={{ color: "#f44336" }} onClick={this.handleEndCall}>
 								<CallEndIcon />
 							</IconButton>
+							<IconButton style={{ color: "#424242" }} onClick={this.toggleDarkMode}>
+								{this.state.darkMode ? "🌞" : "🌙"}
+							</IconButton>
+
 
 							<IconButton style={{ color: "#424242" }} onClick={this.handleAudio}>
 								{this.state.audio === true ? <MicIcon /> : <MicOffIcon />}
@@ -545,17 +556,38 @@ class Video extends Component {
 						<div className="container">
 							<div style={{ paddingTop: "20px" }}>
 								<Input value={window.location.href} disable="true"></Input>
-								<Button style={{backgroundColor: "#3f51b5",color: "whitesmoke",marginLeft: "20px",
-									marginTop: "10px",width: "120px",fontSize: "10px"
+								<Button style={{
+									backgroundColor: "#3f51b5",
+									color: "whitesmoke",
+									marginLeft: "20px",
+									marginTop: "10px",
+									width: "120px",
+									fontSize: "10px"
 								}} onClick={this.copyUrl}>Copy invite link</Button>
 							</div>
 
-							<Row id="main" className="flex-container" style={{ margin: 0, padding: 0 }}>
-								<video id="my-video" ref={this.localVideoref} autoPlay muted style={{
-									borderStyle: "solid",borderColor: "#bdbdbd",margin: "10px",objectFit: "fill",
-									width: "100%",height: "100%"}}></video>
+							<Row 
+								id="main" 
+								className={`flex-container ${this.state.darkMode ? "dark-main" : ""}`} 
+								style={{ margin: 0, padding: 0 }}
+							>
+								<video 
+									id="my-video" 
+									ref={this.localVideoref} 
+									autoPlay 
+									muted 
+									style={{
+										borderStyle: "solid",
+										borderColor: this.state.darkMode ? "#333" : "#bdbdbd", // dark border in dark mode
+										margin: "10px",
+										objectFit: "fill",
+										width: "100%",
+										height: "100%"
+									}}
+								></video>
 							</Row>
 						</div>
+
 					</div>
 				}
 			</div>
